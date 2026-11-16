@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Placar da Casa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: uma coluna estreita, pensada para o celular. Quem é você, tarefas em grade, placar com barras, registros. */
+:root {
+  color-scheme: light;
+  padding-block: env(safe-area-inset-top, 0px) env(safe-area-inset-bottom, 0px);
+  --bg: #edf1f3;
+  --surface: #ffffff;
+  --ink: #12222b;
+  --muted: #566872;
+  --line: #d3dce1;
+  --accent: #1f5fd1;
+  --accent-ink: #ffffff;
+  --accent-soft: #dfe8fa;
+  --ok: #17784f;
+  --ok-bg: #dcf0e5;
+  --warn: #8f5c00;
+  --warn-bg: #fbebc8;
+  --bad: #b3372b;
+  --bad-bg: #f9dfdb;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e161b;
+    --surface: #16222a;
+    --ink: #e7eef1;
+    --muted: #93a4ae;
+    --line: #263641;
+    --accent: #6c9bff;
+    --accent-ink: #0e161b;
+    --accent-soft: #1c2c4a;
+    --ok: #5ccb97;
+    --ok-bg: #123325;
+    --warn: #e8b24a;
+    --warn-bg: #3a2c0e;
+    --bad: #ff8a7a;
+    --bad-bg: #3b1a16;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e161b;
+  --surface: #16222a;
+  --ink: #e7eef1;
+  --muted: #93a4ae;
+  --line: #263641;
+  --accent: #6c9bff;
+  --accent-ink: #0e161b;
+  --accent-soft: #1c2c4a;
+  --ok: #5ccb97;
+  --ok-bg: #123325;
+  --warn: #e8b24a;
+  --warn-bg: #3a2c0e;
+  --bad: #ff8a7a;
+  --bad-bg: #3b1a16;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+#game { display: flex; flex-direction: column; gap: 28px; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.45;
+  padding-block: 20px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+h1, h2 { font-family: var(--font-display); margin: 0; text-wrap: balance; }
+h1 { font-size: 30px; line-height: 1.05; letter-spacing: -0.01em; }
+h2 { font-size: 19px; letter-spacing: 0; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px; }
+.month { display: flex; align-items: center; gap: 6px; }
+.month .label { min-width: 140px; text-align: center; font-weight: 600; text-transform: capitalize; font-variant-numeric: tabular-nums; }
+.icon-btn { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-size: 18px; line-height: 1; }
+.icon-btn:disabled { opacity: .35; cursor: default; }
+
+#banner { padding: 10px 14px; border-radius: 10px; background: var(--warn-bg); color: var(--warn); font-weight: 500; }
+
+section { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.sec-head { display: flex; flex-direction: column; gap: 2px; }
+
+/* quem é você */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface); font-weight: 600; }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.empty { padding: 16px; border: 1.5px dashed var(--line); border-radius: 12px; color: var(--muted); }
+.add-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.add-row input { flex: 1 1 160px; min-width: 0; min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--surface); }
+.btn { min-height: 44px; padding: 0 18px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--surface); font-weight: 600; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.small { min-height: 34px; padding: 0 12px; font-size: 13px; }
+.btn:disabled { opacity: .45; cursor: default; }
+
+/* tarefas */
+.tasks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.task { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 64px; padding: 10px 12px; text-align: left; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface); }
+.task:active:not(:disabled) { transform: scale(.98); }
+.task:disabled { opacity: .5; cursor: default; }
+.task .name { font-weight: 600; line-height: 1.2; min-width: 0; overflow-wrap: anywhere; }
+.task .hint { display: block; font-size: 12px; font-weight: 400; color: var(--muted); margin-top: 2px; }
+.pts { flex: none; display: grid; place-items: center; min-width: 42px; height: 42px; padding: 0 6px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); font-family: var(--font-display); font-weight: 700; font-size: 20px; font-variant-numeric: tabular-nums; }
+.task.big { grid-column: 1 / -1; background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.task.big .hint { color: inherit; opacity: .85; }
+.task.big .pts { background: var(--accent-ink); color: var(--accent); }
+
+/* placar */
+.board { display: flex; flex-direction: column; gap: 10px; }
+.row { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; padding: 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
+.row .pos { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.row .who { font-weight: 600; overflow-wrap: anywhere; }
+.row .score { font-family: var(--font-display); font-weight: 700; font-size: 22px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.row .score small { font-family: var(--font-body); font-weight: 500; font-size: 12px; color: var(--muted); }
+.bar { grid-column: 2 / -1; position: relative; height: 10px; border-radius: 999px; background: var(--bg); overflow: hidden; }
+.bar .done { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 999px; }
+.bar .wait { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(45deg, var(--accent-soft) 0 5px, transparent 5px 10px); }
+.bar .pace { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--ink); opacity: .55; }
+.row .meta { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
+.tag { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.tag.ok { background: var(--ok-bg); color: var(--ok); }
+.tag.warn { background: var(--warn-bg); color: var(--warn); }
+.tag.bad { background: var(--bad-bg); color: var(--bad); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; color: var(--muted); }
+
+.rules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.rule { padding: 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); }
+.rule b { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+.rule.lose b { color: var(--bad); }
+.rule.win b { color: var(--ok); }
+@media (max-width: 460px) { .rules { grid-template-columns: 1fr; } }
+
+/* registros */
+.log { display: flex; flex-direction: column; gap: 8px; }
+.entry { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; align-items: center; padding: 10px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
+.entry .what { font-weight: 600; overflow-wrap: anywhere; }
+.entry .when { font-size: 12px; color: var(--muted); }
+.entry .plus { font-family: var(--font-display); font-weight: 700; font-size: 18px; font-variant-numeric: tabular-nums; }
+.entry .actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* ajustes */
+details { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+summary { cursor: pointer; padding: 14px; font-family: var(--font-display); font-weight: 600; font-size: 17px; }
+.settings { padding: 0 14px 16px; display: flex; flex-direction: column; gap: 16px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 13px; font-weight: 600; }
+.field input { min-height: 44px; padding: 0 12px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--bg); width: 100%; min-width: 0; }
+.pts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px 12px; }
+.pt-field { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.pt-field label { font-size: 14px; min-width: 0; overflow-wrap: anywhere; }
+.pt-field input { width: 72px; flex: none; min-height: 40px; padding: 0 8px; text-align: center; border-radius: 10px; border: 1.5px solid var(--line); background: var(--bg); }
+.people-list { display: flex; flex-wrap: wrap; gap: 8px; }
+
+#toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); max-width: calc(100% - 32px); padding: 12px 18px; border-radius: 12px; background: var(--ink); color: var(--bg); font-weight: 500; box-shadow: 0 6px 24px rgba(0,0,0,.25); z-index: 20; }
+@media (prefers-reduced-motion: reduce) { .task:active:not(:disabled) { transform: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Placar da Casa</h1>
+      <p class="muted">Cada tarefa vale pontos. Bateu a meta do mês, ganhou.</p>
+    </div>
+    <div class="month">
+      <button class="icon-btn" id="prev" aria-label="Mês anterior">&#8249;</button>
+      <div class="label" id="monthLabel"></div>
+      <button class="icon-btn" id="next" aria-label="Próximo mês">&#8250;</button>
+    </div>
+  </header>
+
+  <div id="banner" hidden></div>
+
+  <section id="gate" hidden>
+    <div class="sec-head">
+      <h2>Código da família</h2>
+      <p class="muted">Todo mundo da casa digita o mesmo código para entrar no mesmo placar. Use um código longo e difícil de adivinhar, como três palavras e um número.</p>
+    </div>
+    <form class="add-row" id="gateForm">
+      <input id="codeInput" type="text" maxlength="40" placeholder="ex.: casa-do-sol-2026" autocomplete="off" autocapitalize="none">
+      <button class="btn primary" type="submit">Entrar</button>
+    </form>
+    <p id="gateMsg" class="muted"></p>
+  </section>
+
+  <div id="game" hidden>
+
+  <section>
+    <div class="sec-head"><h2>Quem é você?</h2></div>
+    <div class="chips" id="chips"></div>
+    <form class="add-row" id="addPerson">
+      <input id="personName" type="text" maxlength="24" placeholder="Nome de quem joga" autocomplete="off">
+      <button class="btn" type="submit">Adicionar pessoa</button>
+    </form>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Fez uma tarefa?</h2>
+      <p class="muted">Toque nela. Outra pessoa confirma e os pontos entram no placar.</p>
+    </div>
+    <div class="tasks" id="tasks"></div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Placar do mês</h2>
+      <p class="muted" id="boardInfo"></p>
+    </div>
+    <div class="board" id="board"></div>
+    <div class="legend">
+      <span>Barra cheia: pontos confirmados</span>
+      <span>Listrada: aguardando confirmação</span>
+      <span>Traço escuro: onde você deveria estar hoje</span>
+    </div>
+    <div class="rules" id="rules"></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>Registros</h2></div>
+    <div class="log" id="log"></div>
+  </section>
+
+  <details>
+    <summary>Ajustes do jogo</summary>
+    <div class="settings">
+      <div class="field">
+        <label for="metaInput">Meta do mês (pontos por pessoa)</label>
+        <input id="metaInput" type="number" min="1" max="999" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label for="loseInput">Quem não bater a meta</label>
+        <input id="loseInput" type="text" maxlength="120">
+      </div>
+      <div class="field">
+        <label for="winInput">Quem bater a meta</label>
+        <input id="winInput" type="text" maxlength="120">
+      </div>
+      <div class="field">
+        <label>Pontos de cada tarefa</label>
+        <div class="pts-grid" id="ptsGrid"></div>
+      </div>
+      <div class="field">
+        <label>Pessoas no jogo</label>
+        <div class="people-list" id="peopleList"></div>
+      </div>
+      <div class="field">
+        <label for="shareLink">Link da família (mande no grupo)</label>
+        <input id="shareLink" type="text" readonly>
+        <div class="add-row">
+          <button class="btn small" type="button" id="copyLink">Copiar link</button>
+          <button class="btn small" type="button" id="changeCode">Trocar código</button>
+        </div>
+      </div>
+    </div>
+  </details>
+  </div>
+</div>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore, collection as fsCollection, doc as fsDoc, addDoc, setDoc, updateDoc, deleteDoc,
+  onSnapshot as fsOnSnapshot, query as fsQuery, orderBy as fsOrderBy, limit as fsLimit
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBwYM49OYAUt0r1schm1LaxoirQDHrA4gA",
+  authDomain: "placar-d6347.firebaseapp.com",
+  projectId: "placar-d6347",
+  storageBucket: "placar-d6347.firebasestorage.app",
+  messagingSenderId: "680148857981",
+  appId: "1:680148857981:web:0d967fab57c15e66e3ad14"
+};
+
+/* Camada de dados: os dados de cada família ficam em familias/<código>/... no Firestore. */
+function makeDb(code) {
+  const app = initializeApp(firebaseConfig);
+  const fs = getFirestore(app);
+  const base = "familias/" + code;
+  return {
+    collection: function (p) {
+      const c = fsCollection(fs, base, p);
+      let q = c;
+      const api = {
+        add: async function (d) { const r = await addDoc(c, d); return { id: r.id }; },
+        orderBy: function (f, dir) { q = fsQuery(q, fsOrderBy(f, dir)); return api; },
+        limit: function (n) { q = fsQuery(q, fsLimit(n)); return api; },
+        onSnapshot: function (next, err) { return fsOnSnapshot(q, next, err); }
+      };
+      return api;
+    },
+    doc: function (p) {
+      const parts = p.split("/");
+      const r = fsDoc(fs, base, parts[0], parts[1]);
+      return {
+        set: function (d) { return setDoc(r, d); },
+        update: function (d) { return updateDoc(r, d); },
+        delete: function () { return deleteDoc(r); },
+        onSnapshot: function (next, err) {
+          return fsOnSnapshot(r, function (s) {
+            next({ exists: s.exists(), data: function () { return s.data(); }, metadata: s.metadata });
+          }, err);
+        }
+      };
+    }
+  };
+}
+
+(function () {
+  var TASKS = [
+    { id: "bagunca", name: "Arrumar a bagunça", hint: "Limpar a casa toda, junta todas as outras", pts: 8, big: true },
+    { id: "cozinhar", name: "Cozinhar", pts: 4 },
+    { id: "banheiro", name: "Limpar o banheiro", pts: 3 },
+    { id: "bracal", name: "Trabalho braçal", hint: "Carregar peso, ajudar o pai", pts: 3 },
+    { id: "aspirador", name: "Passar aspirador", pts: 2 },
+    { id: "lavar", name: "Lavar a louça", pts: 2 },
+    { id: "cachorros", name: "Tirar cocô dos cachorros", hint: "Do terreiro", pts: 2 },
+    { id: "estender", name: "Estender as roupas", pts: 2 },
+    { id: "dobrar", name: "Dobrar roupa", pts: 2 },
+    { id: "camas", name: "Arrumar as camas", pts: 1 },
+    { id: "secar", name: "Secar a louça", pts: 1 },
+    { id: "lixo", name: "Tirar o lixo", pts: 1 }
+  ];
+  var DEFAULTS = {
+    meta: 40,
+    lose: "Faz uma tarefa extra escolhida pela mãe",
+    win: "Escolhe o jantar ou o filme do fim de semana",
+    points: {}
+  };
+
+  var db = null;
+  var config = JSON.parse(JSON.stringify(DEFAULTS));
+  var members = [];
+  var logs = [];
+  var me = null;
+  var busy = false;
+  var synced = false;
+  var curMonth = monthKey(new Date());
+  var viewMonth = curMonth;
+
+  function $(id) { return document.getElementById(id); }
+  function el(tag, attrs) {
+    var e = document.createElement(tag);
+    var a = attrs || {};
+    Object.keys(a).forEach(function (k) {
+      var v = a[k];
+      if (k === "class") e.className = v;
+      else if (k.indexOf("on") === 0) e.addEventListener(k.slice(2), v);
+      else if (v === true) e.setAttribute(k, "");
+      else if (v !== false && v != null) e.setAttribute(k, v);
+    });
+    for (var i = 2; i < arguments.length; i++) {
+      var kids = [].concat(arguments[i]);
+      for (var j = 0; j < kids.length; j++) {
+        var kid = kids[j];
+        if (kid == null || kid === false) continue;
+        e.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+      }
+    }
+    return e;
+  }
+  function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+  function monthKey(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); }
+  function shiftMonth(key, delta) {
+    var p = key.split("-");
+    return monthKey(new Date(Number(p[0]), Number(p[1]) - 1 + delta, 1));
+  }
+  function monthLabel(key) {
+    var p = key.split("-");
+    return new Date(Number(p[0]), Number(p[1]) - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  }
+  function ptsFor(t) {
+    var v = config.points && config.points[t.id];
+    return typeof v === "number" && v > 0 ? v : t.pts;
+  }
+  function memberName(id) {
+    for (var i = 0; i < members.length; i++) if (members[i].id === id) return members[i].name;
+    return "Alguém";
+  }
+  function store(key, val) { try { if (val == null) localStorage.removeItem(key); else localStorage.setItem(key, val); } catch (e) {} }
+  function load(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+
+  var toastTimer = null;
+  function toast(msg) {
+    var t = $("toast");
+    t.textContent = msg;
+    t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.hidden = true; }, 3200);
+  }
+  function banner(msg) {
+    var b = $("banner");
+    if (msg) { b.textContent = msg; b.hidden = false; } else { b.hidden = true; }
+  }
+  function writeError(e) {
+    if (e && e.code === "permission-denied") toast("Sem permissão para salvar. Confira as regras do Firestore.");
+    else if (e && e.code === "resource-exhausted") toast("O limite gratuito de hoje foi atingido. Tente amanhã.");
+    else toast("Não consegui salvar. Tente de novo.");
+  }
+
+  /* ---------- ações ---------- */
+  async function addLog(task) {
+    if (!db || !me || busy || viewMonth !== curMonth) return;
+    busy = true;
+    try {
+      var p = ptsFor(task);
+      await db.collection("logs").add({
+        memberId: me, taskId: task.id, taskName: task.name, points: p,
+        month: curMonth, ts: Date.now(), confirmed: false
+      });
+      toast(task.name + ": +" + p + " pts, aguardando confirmação");
+    } catch (e) { writeError(e); }
+    busy = false;
+  }
+  async function confirmLog(id) {
+    if (!db || !me) return;
+    try { await db.doc("logs/" + id).update({ confirmed: true, confirmedBy: me }); toast("Confirmado"); }
+    catch (e) { writeError(e); }
+  }
+  async function removeLog(id) {
+    if (!db) return;
+    try { await db.doc("logs/" + id).delete(); toast("Registro removido"); }
+    catch (e) { writeError(e); }
+  }
+  async function addPerson(name) {
+    if (!db) return;
+    try {
+      var ref = await db.collection("members").add({ name: name, ts: Date.now() });
+      if (!me) { me = ref.id; store("placar-me", me); render(); }
+    } catch (e) { writeError(e); }
+  }
+  async function removePerson(id) {
+    if (!db) return;
+    try { await db.doc("members/" + id).delete(); if (me === id) { me = null; store("placar-me", null); } }
+    catch (e) { writeError(e); }
+  }
+  async function saveConfig(patch) {
+    if (!db) return;
+    var next = Object.assign({}, config, patch);
+    config = next;
+    try { await db.doc("config/main").set(next); }
+    catch (e) { writeError(e); }
+    render();
+  }
+
+  /* ---------- render ---------- */
+  function renderMonth() {
+    $("monthLabel").textContent = monthLabel(viewMonth);
+    $("next").disabled = viewMonth >= curMonth;
+  }
+  function renderPeople() {
+    var box = $("chips");
+    clear(box);
+    if (!members.length) {
+      box.append(el("div", { class: "empty" }, "Ninguém no jogo ainda. Adicione o nome de cada pessoa da casa (são 5) para começar."));
+      return;
+    }
+    members.forEach(function (m) {
+      box.append(el("button", {
+        class: "chip", type: "button", "aria-pressed": m.id === me ? "true" : "false",
+        onclick: function () { me = m.id; store("placar-me", me); render(); }
+      }, m.name));
+    });
+  }
+  function renderTasks() {
+    var box = $("tasks");
+    clear(box);
+    var past = viewMonth !== curMonth;
+    TASKS.forEach(function (t) {
+      var btn = el("button", {
+        class: "task" + (t.big ? " big" : ""), type: "button",
+        disabled: !db || !me || past,
+        onclick: function () { addLog(t); }
+      },
+        el("span", { class: "name" }, t.name, t.hint ? el("span", { class: "hint" }, t.hint) : null),
+        el("span", { class: "pts", "aria-label": ptsFor(t) + " pontos" }, ptsFor(t))
+      );
+      box.append(btn);
+    });
+    if (past) box.append(el("p", { class: "muted" }, "Este mês já passou. Volte ao mês atual para registrar tarefas."));
+    else if (!me) box.append(el("p", { class: "muted" }, "Escolha seu nome acima para liberar as tarefas."));
+  }
+  function standings() {
+    var rows = members.map(function (m) {
+      var done = 0, wait = 0;
+      logs.forEach(function (l) {
+        if (l.month !== viewMonth || l.memberId !== m.id) return;
+        if (l.confirmed) done += l.points; else wait += l.points;
+      });
+      return { id: m.id, name: m.name, done: done, wait: wait };
+    });
+    rows.sort(function (a, b) { return b.done - a.done || b.wait - a.wait || a.name.localeCompare(b.name); });
+    return rows;
+  }
+  function renderBoard() {
+    var box = $("board");
+    clear(box);
+    var meta = config.meta;
+    var isCur = viewMonth === curMonth;
+    var now = new Date();
+    var dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    var pacePts = Math.round(meta * now.getDate() / dim);
+    $("boardInfo").textContent = "Meta: " + meta + " pontos por pessoa" + (isCur ? ". Ritmo de hoje: " + pacePts + " pontos." : ".");
+    if (!members.length) {
+      box.append(el("div", { class: "empty" }, "O placar aparece quando as pessoas forem adicionadas."));
+      return;
+    }
+    standings().forEach(function (r, i) {
+      var pctDone = Math.min(100, r.done / meta * 100);
+      var pctWait = Math.min(100 - pctDone, r.wait / meta * 100);
+      var hit = r.done >= meta;
+      var tag;
+      if (hit) tag = el("span", { class: "tag ok" }, "Meta batida");
+      else if (isCur) tag = el("span", { class: "tag " + (r.done >= pacePts ? "warn" : "bad") }, "Faltam " + (meta - r.done) + " pts");
+      else tag = el("span", { class: "tag bad" }, "Não bateu: faltaram " + (meta - r.done));
+      var bar = el("div", { class: "bar" },
+        el("div", { class: "done", style: "width:" + pctDone + "%" }),
+        pctWait > 0 ? el("div", { class: "wait", style: "left:" + pctDone + "%;width:" + pctWait + "%" }) : null,
+        isCur ? el("div", { class: "pace", style: "left:calc(" + Math.min(100, pacePts / meta * 100) + "% - 1px)" }) : null
+      );
+      box.append(el("div", { class: "row" },
+        el("div", { class: "pos" }, (i + 1) + "º"),
+        el("div", { class: "who" }, r.name),
+        el("div", { class: "score" }, r.done, el("small", null, " / " + meta)),
+        bar,
+        el("div", { class: "meta" }, tag, r.wait > 0 ? el("span", null, r.wait + " pts aguardando confirmação") : null)
+      ));
+    });
+  }
+  function renderRules() {
+    var box = $("rules");
+    clear(box);
+    box.append(
+      el("div", { class: "rule lose" }, el("b", null, "Quem não bater a meta"), config.lose || "Combinem em Ajustes do jogo."),
+      el("div", { class: "rule win" }, el("b", null, "Quem bater a meta"), config.win || "Combinem em Ajustes do jogo.")
+    );
+  }
+  function renderLog() {
+    var box = $("log");
+    clear(box);
+    var list = logs.filter(function (l) { return l.month === viewMonth; }).slice(0, 30);
+    if (!list.length) {
+      box.append(el("div", { class: "empty" }, "Nenhuma tarefa registrada neste mês ainda. A primeira aparece aqui."));
+      return;
+    }
+    list.forEach(function (l) {
+      var mine = l.memberId === me;
+      var when = new Date(l.ts).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+      var actions = [];
+      if (l.confirmed) {
+        actions.push(el("span", { class: "tag ok" }, "Confirmado por " + memberName(l.confirmedBy)));
+      } else {
+        actions.push(el("span", { class: "tag warn" }, "Aguardando confirmação"));
+        if (me && !mine) actions.push(el("button", { class: "btn small primary", type: "button", onclick: function () { confirmLog(l.id); } }, "Confirmar"));
+        if (me && !mine) actions.push(el("button", { class: "btn small", type: "button", onclick: function () { removeLog(l.id); } }, "Recusar"));
+      }
+      if (mine) actions.push(el("button", { class: "btn small", type: "button", onclick: function () { removeLog(l.id); } }, "Desfazer"));
+      box.append(el("div", { class: "entry" },
+        el("div", null, el("div", { class: "what" }, memberName(l.memberId) + " · " + l.taskName), el("div", { class: "when" }, when)),
+        el("div", { class: "plus" }, "+" + l.points),
+        el("div", { class: "actions" }, actions)
+      ));
+    });
+  }
+  function renderSettingsPeople() {
+    var box = $("peopleList");
+    clear(box);
+    if (!members.length) { box.append(el("span", { class: "muted" }, "Ninguém ainda.")); return; }
+    members.forEach(function (m) {
+      box.append(el("button", { class: "btn small", type: "button", onclick: function () { removePerson(m.id); }, "aria-label": "Remover " + m.name }, m.name + "  ×"));
+    });
+  }
+  function syncInputs() {
+    var pairs = [["metaInput", config.meta], ["loseInput", config.lose], ["winInput", config.win]];
+    pairs.forEach(function (p) {
+      var i = $(p[0]);
+      if (document.activeElement !== i) i.value = p[1];
+    });
+    TASKS.forEach(function (t) {
+      var i = $("pt-" + t.id);
+      if (i && document.activeElement !== i) i.value = ptsFor(t);
+    });
+  }
+  function render() {
+    renderMonth(); renderPeople(); renderTasks(); renderBoard(); renderRules(); renderLog(); renderSettingsPeople(); syncInputs();
+  }
+
+  /* ---------- eventos fixos ---------- */
+  $("prev").addEventListener("click", function () { viewMonth = shiftMonth(viewMonth, -1); render(); });
+  $("next").addEventListener("click", function () { if (viewMonth < curMonth) { viewMonth = shiftMonth(viewMonth, 1); render(); } });
+  $("addPerson").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var input = $("personName");
+    var name = input.value.trim();
+    if (!name) return;
+    input.value = "";
+    addPerson(name);
+  });
+  $("metaInput").addEventListener("change", function (ev) {
+    var n = Math.round(Number(ev.target.value));
+    if (n >= 1 && n <= 999) saveConfig({ meta: n }); else ev.target.value = config.meta;
+  });
+  $("loseInput").addEventListener("change", function (ev) { saveConfig({ lose: ev.target.value.trim() }); });
+  $("winInput").addEventListener("change", function (ev) { saveConfig({ win: ev.target.value.trim() }); });
+  (function buildPtsGrid() {
+    var grid = $("ptsGrid");
+    TASKS.forEach(function (t) {
+      var input = el("input", { id: "pt-" + t.id, type: "number", min: "1", max: "50", inputmode: "numeric" });
+      input.addEventListener("change", function () {
+        var n = Math.round(Number(input.value));
+        if (n >= 1 && n <= 50) {
+          var pts = Object.assign({}, config.points || {});
+          pts[t.id] = n;
+          saveConfig({ points: pts });
+        } else input.value = ptsFor(t);
+      });
+      grid.append(el("div", { class: "pt-field" }, el("label", { for: "pt-" + t.id }, t.name), input));
+    });
+  })();
+
+  $("gateForm").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var c = normalizeCode($("codeInput").value);
+    if (c.length < 8) { $("gateMsg").textContent = "O código precisa ter pelo menos 8 letras ou números. Use letras sem acento, números e hífen."; return; }
+    store("placar-code", c);
+    try { history.replaceState(null, "", "#" + c); } catch (e) {}
+    start();
+  });
+  $("copyLink").addEventListener("click", function () {
+    var i = $("shareLink");
+    i.focus(); i.select();
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(i.value).then(function () { toast("Link copiado"); }, function () { toast("Segure no link e copie"); });
+        return;
+      }
+      if (document.execCommand && document.execCommand("copy")) { toast("Link copiado"); return; }
+    } catch (e) {}
+    toast("Segure no link e copie");
+  });
+  $("changeCode").addEventListener("click", function () {
+    store("placar-code", null);
+    try { history.replaceState(null, "", location.pathname); } catch (e) {}
+    location.reload();
+  });
+
+  /* ---------- dados ---------- */
+  function fresh(snap) { if (!snap.metadata.fromCache && !synced) { synced = true; banner(null); } }
+  function dataError() { banner("Sem acesso aos dados. Confira a conexão e as regras do Firestore."); }
+
+  function normalizeCode(s) {
+    return String(s || "").trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9_-]/g, "");
+  }
+  function getCode() {
+    var h = "";
+    try { h = normalizeCode(decodeURIComponent((location.hash || "").slice(1))); } catch (e) { h = ""; }
+    if (h.length >= 8) { store("placar-code", h); return h; }
+    var s = normalizeCode(load("placar-code"));
+    return s.length >= 8 ? s : null;
+  }
+
+  async function start() {
+    me = load("placar-me");
+    var code = getCode();
+    if (!code) { $("gate").hidden = false; $("game").hidden = true; return; }
+    $("gate").hidden = true;
+    $("game").hidden = false;
+    try { db = makeDb(code); } catch (e) { db = null; }
+    $("shareLink").value = location.origin + location.pathname + "#" + code;
+    render();
+    if (!db) { banner("Não consegui conectar ao banco de dados."); return; }
+    setTimeout(function () { if (!synced) banner("Ainda não consegui conectar. O que aparece pode estar desatualizado."); }, 10000);
+
+    db.doc("config/main").onSnapshot(function (snap) {
+      fresh(snap);
+      var d = snap.exists ? snap.data() : {};
+      config = {
+        meta: typeof d.meta === "number" && d.meta > 0 ? d.meta : DEFAULTS.meta,
+        lose: typeof d.lose === "string" ? d.lose : DEFAULTS.lose,
+        win: typeof d.win === "string" ? d.win : DEFAULTS.win,
+        points: d.points && typeof d.points === "object" ? d.points : {}
+      };
+      render();
+    }, dataError);
+
+    db.collection("members").orderBy("ts", "asc").onSnapshot(function (snap) {
+      fresh(snap);
+      members = snap.docs.map(function (d) { var x = d.data(); return { id: d.id, name: String(x.name || "?") }; });
+      if (me && synced && !members.some(function (m) { return m.id === me; })) me = null;
+      render();
+    }, dataError);
+
+    db.collection("logs").orderBy("ts", "desc").limit(1000).onSnapshot(function (snap) {
+      fresh(snap);
+      logs = snap.docs.map(function (d) {
+        var x = d.data();
+        return {
+          id: d.id, memberId: x.memberId, taskId: x.taskId, taskName: String(x.taskName || ""),
+          points: Number(x.points) || 0, month: x.month, ts: Number(x.ts) || 0,
+          confirmed: x.confirmed === true, confirmedBy: x.confirmedBy
+        };
+      });
+      render();
+    }, dataError);
+  }
+  start();
+})();
+</script>
+</body>
+</html>
